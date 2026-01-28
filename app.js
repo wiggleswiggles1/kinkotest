@@ -50,14 +50,20 @@ function dropBall(username) {
 
 // --- LISTENER ---
 _supabase
-  .channel('plinko-realtime')
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'drops' }, (payload) => {
-    console.log('🔥 DATA RECEIVED:', payload.new.username);
-    dropBall(payload.new.username);
-  })
-  .subscribe((status) => {
-    console.log("🔗 Realtime Status:", status);
-  });
+  .channel('plinko-room')
+  .on(
+    'postgres_changes', 
+    { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'drops' // Must be lowercase to match your DB screenshot
+    }, 
+    (payload) => {
+      console.log('🔥 NEW DROP DETECTED:', payload.new.username);
+      dropBall(payload.new.username);
+    }
+  )
+  .subscribe();
 
 Render.run(render);
 Runner.run(Runner.create(), engine);
