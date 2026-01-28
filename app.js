@@ -1,10 +1,8 @@
-// --- MATTER.JS SETUP ---
-const { Engine, Render, Runner, Bodies, World, Events, Body, Composite } = Matter;
+const { Engine, Render, Runner, Bodies, World, Events, Body } = Matter;
 
 // --- CONFIGURATION ---
 const SUPABASE_URL = 'https://cajjcndpvmrngtmjhgdh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhampjbmRwdm1ybmd0bWpoZ2RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MjM3MzMsImV4cCI6MjA4NTE5OTczM30.VXk2pJoAjobVVsNuLiIKyShgXX3uIrylU4xaYi9j6f8';
-
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const engine = Engine.create();
@@ -14,12 +12,7 @@ engine.gravity.y = 0.5;
 const render = Render.create({
     element: document.getElementById('canvas-container'),
     engine: engine,
-    options: { 
-        width: 600, 
-        height: 600, 
-        wireframes: false, 
-        background: 'transparent' 
-    }
+    options: { width: 600, height: 600, wireframes: false, background: 'transparent' }
 });
 
 // --- CREATE PEGS ---
@@ -27,32 +20,27 @@ for (let i = 0; i < 10; i++) {
     for (let j = 0; j <= i; j++) {
         const x = 300 + (j - i / 2) * 40;
         const y = 100 + i * 40;
-        World.add(world, Bodies.circle(x, y, 4, { 
-            isStatic: true, 
-            render: { fillStyle: '#53fc18' } 
-        }));
+        World.add(world, Bodies.circle(x, y, 4, { isStatic: true, render: { fillStyle: '#53fc18' } }));
     }
 }
 
 // --- CREATE BUCKETS ---
 const bucketValues = [5, 2, 0.5, 0.2, 0.2, 0.5, 2, 5];
 const bucketWidth = 600 / bucketValues.length;
-
 bucketValues.forEach((val, i) => {
     const x = i * bucketWidth + bucketWidth / 2;
-    const bucket = Bodies.rectangle(x, 580, bucketWidth - 10, 40, {
+    World.add(world, Bodies.rectangle(x, 580, bucketWidth - 5, 40, {
         isStatic: true,
         label: `bucket-${val}`,
-        render: { fillStyle: val >= 2 ? '#ff4d4d' : '#4d4d4d' }
-    });
-    World.add(world, bucket);
+        render: { fillStyle: val >= 2 ? '#ff4d4d' : '#444' }
+    }));
 });
 
-// --- CORE FUNCTIONS ---
+// --- DROP BALL FUNCTION ---
 function dropBall(username) {
+    console.log(`🎰 Dropping ball for: ${username}`);
     const ball = Bodies.circle(300 + (Math.random() * 10 - 5), 20, 8, {
         restitution: 0.5,
-        friction: 0.01,
         label: 'ball',
         render: { fillStyle: '#ffffff' }
     });
@@ -60,32 +48,16 @@ function dropBall(username) {
     World.add(world, ball);
 }
 
-// --- COLLISION DETECTION ---
-Events.on(engine, 'collisionStart', (event) => {
-    event.pairs.forEach((pair) => {
-        const { bodyA, bodyB } = pair;
-        
-        // Check if a ball hit a bucket
-        const ball = bodyA.label === 'ball' ? bodyA : bodyB.label === 'ball' ? bodyB : null;
-        const bucket = bodyA.label.startsWith('bucket') ? bodyA : bodyB.label.startsWith('bucket') ? bodyB : null;
-
-        if (ball && bucket) {
-            const multiplier = bucket.label.split('-')[1];
-            console.log(`🎯 ${ball.username} hit the ${multiplier}x bucket!`);
-            
-            // Remove ball after a small delay
-            setTimeout(() => {
-                World.remove(world, ball);
-            }, 500);
-        }
-    });
-});
-
-// --- SUPABASE LISTENER ---
-_supabase.channel('plinko-drops').on('postgres_changes', 
-    { event: 'INSERT', schema: 'public', table: 'drops' }, 
-    payload => dropBall(payload.new.username)
-).subscribe();
+// --- LISTENER ---
+_supabase
+  .channel('plinko-realtime')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'drops' }, (payload) => {
+    console.log('🔥 DATA RECEIVED:', payload.new.username);
+    dropBall(payload.new.username);
+  })
+  .subscribe((status) => {
+    console.log("🔗 Realtime Status:", status);
+  });
 
 Render.run(render);
 Runner.run(Runner.create(), engine);
