@@ -42,7 +42,7 @@ function dropBall(username) {
     const ball = Bodies.circle(300 + (Math.random() * 10 - 5), 20, 8, {
         restitution: 0.5,
         label: 'ball',
-        render: { fillStyle: '#ffffff' }
+        render: { fillStyle: '#000000' }
     });
     ball.username = username;
     World.add(world, ball);
