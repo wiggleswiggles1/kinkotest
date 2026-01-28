@@ -8,6 +8,7 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const engine = Engine.create();
 const world = engine.world;
 engine.gravity.y = 0.5;
+console.log("🚀 App.js is officially running!"); // If you don't see this, the file isn't loading
 
 const render = Render.create({
     element: document.getElementById('canvas-container'),
@@ -34,23 +35,19 @@ function dropBall(username) {
     World.add(world, ball);
 }
 
-// app.js - Update your listener block
 const channel = _supabase
-  .channel('plinko-drops') // Name doesn't matter, just needs to be unique
+  .channel('plinko-drops')
   .on(
     'postgres_changes', 
-    { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'drops' 
-    }, 
+    { event: 'INSERT', schema: 'public', table: 'drops' }, 
     (payload) => {
-      console.log('Drop received from DB:', payload.new.username);
-      dropBall(payload.new.username); // Triggers the physics
+      console.log('🔥 DROP DETECTED:', payload.new.username);
+      dropBall(payload.new.username);
     }
   )
-  .subscribe((status) => {
-    console.log("Subscription status:", status);
+  .subscribe((status, err) => {
+    console.log("🔗 Realtime Status:", status);
+    if (err) console.error("❌ Subscription Error:", err);
   });
 Render.run(render);
 Runner.run(Runner.create(), engine);
