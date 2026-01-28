@@ -49,21 +49,19 @@ function dropBall(username) {
 }
 
 // --- LISTENER ---
-_supabase
-  .channel('plinko-room')
-  .on(
-    'postgres_changes', 
-    { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'drops' // Must be lowercase to match your DB screenshot
-    }, 
-    (payload) => {
-      console.log('🔥 NEW DROP DETECTED:', payload.new.username);
-      dropBall(payload.new.username);
+// --- FIREBASE REALTIME LISTENER ---
+database.ref('drops').on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.username) {
+        console.log("🎲 Firebase Drop received for:", data.username);
+        
+        // Trigger your existing dropBall function
+        dropBall(data.username);
+
+        // Optional: Remove the record after dropping so the DB stays empty
+        database.ref('drops/' + snapshot.key).remove();
     }
-  )
-  .subscribe();
+});
 
 Render.run(render);
 Runner.run(Runner.create(), engine);
