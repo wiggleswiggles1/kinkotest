@@ -1,22 +1,16 @@
 // --- MATTER.JS SETUP ---
-const { Engine, Render, Runner, Bodies, World, Events, Body } = Matter;
+const { Engine, Render, Runner, Bodies, World, Events, Body, Composite } = Matter;
 
 // --- CONFIGURATION ---
-// These match your verified project settings
 const SUPABASE_URL = 'https://cajjcndpvmrngtmjhgdh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhampjbmRwdm1ybmd0bWpoZ2RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MjM3MzMsImV4cCI6MjA4NTE5OTczM30.VXk2pJoAjobVVsNuLiIKyShgXX3uIrylU4xaYi9j6f8';
 
-// Initialize Supabase Client
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Physics Engine Setup
 const engine = Engine.create();
 const world = engine.world;
 engine.gravity.y = 0.5;
 
-console.log("🚀 Plinko Overlay: App.js is officially running!");
-
-// Create Renderer
 const render = Render.create({
     element: document.getElementById('canvas-container'),
     engine: engine,
@@ -28,7 +22,7 @@ const render = Render.create({
     }
 });
 
-// Create Pegs in a Triangle Pattern
+// --- CREATE PEGS ---
 for (let i = 0; i < 10; i++) {
     for (let j = 0; j <= i; j++) {
         const x = 300 + (j - i / 2) * 40;
@@ -40,50 +34,58 @@ for (let i = 0; i < 10; i++) {
     }
 }
 
-// --- CORE FUNCTIONS ---
+// --- CREATE BUCKETS ---
+const bucketValues = [5, 2, 0.5, 0.2, 0.2, 0.5, 2, 5];
+const bucketWidth = 600 / bucketValues.length;
 
-/**
- * Creates and drops a ball into the world
- * @param {string} username - The user who triggered the drop
- */
+bucketValues.forEach((val, i) => {
+    const x = i * bucketWidth + bucketWidth / 2;
+    const bucket = Bodies.rectangle(x, 580, bucketWidth - 10, 40, {
+        isStatic: true,
+        label: `bucket-${val}`,
+        render: { fillStyle: val >= 2 ? '#ff4d4d' : '#4d4d4d' }
+    });
+    World.add(world, bucket);
+});
+
+// --- CORE FUNCTIONS ---
 function dropBall(username) {
-    console.log(`🎰 Dropping ball for: ${username}`);
     const ball = Bodies.circle(300 + (Math.random() * 10 - 5), 20, 8, {
         restitution: 0.5,
         friction: 0.01,
+        label: 'ball',
         render: { fillStyle: '#ffffff' }
     });
     ball.username = username;
     World.add(world, ball);
 }
 
-// --- SUPABASE REALTIME LISTENER ---
+// --- COLLISION DETECTION ---
+Events.on(engine, 'collisionStart', (event) => {
+    event.pairs.forEach((pair) => {
+        const { bodyA, bodyB } = pair;
+        
+        // Check if a ball hit a bucket
+        const ball = bodyA.label === 'ball' ? bodyA : bodyB.label === 'ball' ? bodyB : null;
+        const bucket = bodyA.label.startsWith('bucket') ? bodyA : bodyB.label.startsWith('bucket') ? bodyB : null;
 
-const channel = _supabase
-  .channel('plinko-drops')
-  .on(
-    'postgres_changes', 
-    { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'drops' 
-    }, 
-    (payload) => {
-      console.log('🔥 NEW DB INSERT DETECTED:', payload.new.username);
-      dropBall(payload.new.username);
-    }
-  )
-  .subscribe((status, err) => {
-    console.log("🔗 Connection Status:", status);
-    if (err) {
-        console.error("❌ Subscription Error:", err);
-    }
-    if (status === 'SUBSCRIBED') {
-        console.log("✅ Listening for drops from Kick chat...");
-    }
-  });
+        if (ball && bucket) {
+            const multiplier = bucket.label.split('-')[1];
+            console.log(`🎯 ${ball.username} hit the ${multiplier}x bucket!`);
+            
+            // Remove ball after a small delay
+            setTimeout(() => {
+                World.remove(world, ball);
+            }, 500);
+        }
+    });
+});
 
-// --- START ENGINES ---
+// --- SUPABASE LISTENER ---
+_supabase.channel('plinko-drops').on('postgres_changes', 
+    { event: 'INSERT', schema: 'public', table: 'drops' }, 
+    payload => dropBall(payload.new.username)
+).subscribe();
+
 Render.run(render);
-const runner = Runner.create();
-Runner.run(runner, engine);
+Runner.run(Runner.create(), engine);
