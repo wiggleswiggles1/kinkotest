@@ -35,9 +35,16 @@ function dropBall(username) {
 }
 
 // Realtime Listener for the Bot
-_supabase.channel('public:drops').on('postgres_changes', { event: 'INSERT', table: 'drops' }, payload => {
-    dropBall(payload.new.username);
-}).subscribe();
-
+_supabase
+  .channel('public:drops') // This 'channel' name can be anything
+  .on(
+    'postgres_changes', 
+    { event: 'INSERT', schema: 'public', table: 'drops' }, 
+    (payload) => {
+      console.log('Change received!', payload);
+      dropBall(payload.new.username); // This triggers the physics engine
+    }
+  )
+  .subscribe();
 Render.run(render);
 Runner.run(Runner.create(), engine);
