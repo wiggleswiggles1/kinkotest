@@ -34,17 +34,23 @@ function dropBall(username) {
     World.add(world, ball);
 }
 
-// Realtime Listener for the Bot
-_supabase
-  .channel('public:drops') // This 'channel' name can be anything
+// app.js - Update your listener block
+const channel = _supabase
+  .channel('plinko-drops') // Name doesn't matter, just needs to be unique
   .on(
     'postgres_changes', 
-    { event: 'INSERT', schema: 'public', table: 'drops' }, 
+    { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'drops' 
+    }, 
     (payload) => {
-      console.log('Change received!', payload);
-      dropBall(payload.new.username); // This triggers the physics engine
+      console.log('Drop received from DB:', payload.new.username);
+      dropBall(payload.new.username); // Triggers the physics
     }
   )
-  .subscribe();
+  .subscribe((status) => {
+    console.log("Subscription status:", status);
+  });
 Render.run(render);
 Runner.run(Runner.create(), engine);
