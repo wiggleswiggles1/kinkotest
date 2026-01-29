@@ -30,13 +30,14 @@ World.add(world, [
     Bodies.rectangle(440, 40, 220, 10, { isStatic: true, angle: -Math.PI / 5, render: { visible: false } })
 ]);
 
-// --- PEGS ---
+// --- PEGS (Updated for more sideways bounce) ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
-        const x = 300 + (j - i / 2) * 41.5; 
+        const x = 300 + (j - i / 2) * 42; // Spacing adjusted for bounce
         const y = 80 + i * 44; 
-        World.add(world, Bodies.circle(x, y, 3, { 
+        World.add(world, Bodies.circle(x, y, 2.5, { // Slightly smaller pegs for more room
             isStatic: true, 
+            restitution: 1.0, // Pegs are now bouncy
             render: { fillStyle: '#ffffff' } 
         }));
     }
@@ -55,15 +56,23 @@ bucketValues.forEach((val, i) => {
     World.add(world, sensor);
 });
 
-// --- DROP BALL ---
+// --- DROP BALL (New Physics & Random Nudge) ---
 function dropBall(username) {
-    const spawnX = 300 + (Math.random() * 4 - 2);
+    // Widened spawn range for varied entry angles
+    const spawnX = 300 + (Math.random() * 20 - 10); 
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.1, friction: 0.2, frictionAir: 0.04, label: 'ball',
+        restitution: 0.5,   // Higher bounciness
+        friction: 0.005,    // Very slippery
+        frictionAir: 0.02,  // Less drag
+        label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
     World.add(world, ball);
+
+    // Apply a tiny random horizontal "kick" to prevent center-clumping
+    const force = (Math.random() - 0.5) * 0.002;
+    Matter.Body.applyForce(ball, ball.position, { x: force, y: 0 });
 }
 
 // --- DROP QUEUE ---
@@ -82,7 +91,6 @@ async function processQueue() {
 }
 
 // --- COLLISIONS (STRICT POINT LOGIC) ---
-// --- COLLISIONS (NO MORE JUMPING) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -95,17 +103,13 @@ Events.on(engine, 'collisionStart', (event) => {
             if (ball.label === 'ball' && ball.username) {
                 const amount = parseInt(bucket.label.slice(7));
                 
-                // Show the notification immediately
                 if (amount < 0) {
                     showNoti(`💀 @${ball.username} lost ${Math.abs(amount)} Balls!`, 'noti-admin');
                 } else {
                     showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
-                // Update Firebase: ONLY add the amount from the bucket
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
-                    // If user doesn't exist yet, we don't give a bonus here. 
-                    // The bot handles the 250 starting points.
                     if (!data) return null; 
 
                     data.points = Math.max(0, (data.points || 0) + amount);
