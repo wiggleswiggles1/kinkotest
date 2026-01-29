@@ -144,22 +144,5 @@ database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapsh
     });
 });
 
-// --- OUTLINE RENDERING ---
-Events.on(render, 'afterRender', () => {
-    const { context } = render;
-    context.font = "bold 16px Arial";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    bucketValues.forEach((val, i) => {
-        const x = (i * bWidth) + (bWidth / 2);
-        const y = 750;
-        context.strokeStyle = "#000000";
-        context.lineWidth = 4;
-        context.strokeText(val, x, y);
-        context.fillStyle = "#ffffff";
-        context.fillText(val, x, y);
-    });
-});
-
 Render.run(render);
 Runner.run(Runner.create(), engine);
