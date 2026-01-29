@@ -25,7 +25,7 @@ body {
     width: 600px;
     height: 800px;
     margin: 0 auto;
-    overflow: visible; /* Changed from default to ensure things aren't cut off */
+    overflow: visible; /* Crucial: allows notifications to show outside the 600px width */
 }
 
 #leaderboard h3 {
@@ -92,10 +92,11 @@ body {
 .b-neg { background: #ff4d4d; box-shadow: 0 0 12px #ff4d4d; }
 
 /* NOTIFICATIONS */
+/* Update this in your style.css */
 #notification-container {
     position: absolute;
     top: 50px;
-    right: 20px;
+    right: -220px; /* Moves it 220px outside the game wrapper to the right */
     display: flex;
     flex-direction: column;
     gap: 8px;
