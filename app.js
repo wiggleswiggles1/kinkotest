@@ -57,20 +57,20 @@ bucketValues.forEach((val, i) => {
 
 // --- DROP BALL (New Physics & Random Nudge) ---
 function dropBall(username) {
-    // Widened spawn range for varied entry angles
-    const spawnX = 300 + (Math.random() * 20 - 10); 
+    // Tightened spawn range (±5 instead of ±10) to keep it controlled
+    const spawnX = 300 + (Math.random() * 10 - 5); 
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.5,   // Higher bounciness
-        friction: 0.005,    // Very slippery
-        frictionAir: 0.02,  // Less drag
+        restitution: 0.3,   // Reduced from 0.5 (More predictable)
+        friction: 0.05,     // Increased from 0.005 (Gives it a bit of grip)
+        frictionAir: 0.03,  // Increased from 0.02 (Slows the fall slightly)
         label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
     World.add(world, ball);
 
-    // Apply a tiny random horizontal "kick" to prevent center-clumping
-    const force = (Math.random() - 0.5) * 0.002;
+    // Tiny nudge (reduced by 50%) just to break the "perfect center" trap
+    const force = (Math.random() - 0.5) * 0.001;
     Matter.Body.applyForce(ball, ball.position, { x: force, y: 0 });
 }
 
