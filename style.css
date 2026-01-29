@@ -96,13 +96,13 @@ body {
 #notification-container {
     position: absolute;
     top: 50px;
-    /* Pushes it past the 600px board width */
-    left: 610px; 
+    right: 10px; /* Moves them back inside the 600px board */
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 9999; /* Ensure it's above everything */
-    width: 250px;
+    z-index: 9999; 
+    width: 200px;
+    pointer-events: none; /* Allows you to click 'through' them if needed */
 }
 /* Add this to your style.css */
 .bucket-label {
@@ -121,6 +121,8 @@ body {
     padding: 10px 15px;
     border-radius: 4px;
     font-size: 13px;
+    /* This ensures they stay visible even on dark backgrounds */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
     animation: slideIn 0.5s ease forwards, fadeOut 0.5s ease 4.5s forwards;
 }
 .noti-admin { border-left-color: #00d4ff; }
