@@ -138,7 +138,7 @@ database.ref('drops').on('child_added', (snapshot) => {
 });
 
 // --- LEADERBOARD (Points Based) ---
-database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapshot) => {
+database.ref('users').orderByChild('points').limitToLast(5).on('value', (snapshot) => {
     const list = document.getElementById('leaderboard-list');
     if (!list) return;
     list.innerHTML = '';
