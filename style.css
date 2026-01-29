@@ -1,68 +1,59 @@
 body {
     margin: 0;
-    background-color: transparent;
+    background-color: #000;
     overflow: hidden;
-    font-family: 'Arial Black', sans-serif;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 .game-wrapper {
     position: relative;
     width: 600px;
-    height: 600px;
+    height: 700px; /* Increased height for the square rows */
     margin: 0 auto;
 }
 
-#canvas-container {
-    width: 600px;
-    height: 600px;
-}
-
-/* Position the multiplier labels over the physics buckets */
-#bucket-labels {
+/* The Row of Square Buckets */
+#bucket-container {
     position: absolute;
-    bottom: 15px;
+    bottom: 20px;
     width: 100%;
     display: flex;
-    justify-content: space-around;
-    pointer-events: none;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
-.label {
-    width: 70px;
-    text-align: center;
-    font-size: 18px;
-    color: white;
-    text-shadow: 0 0 8px rgba(0,0,0,1);
+.square-bucket {
+    flex: 1;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #fff;
+    border-radius: 4px;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
 }
 
-/* Neon Glow Colors */
-.l-red { color: #ff4d4d; }
-.l-orange { color: #ffa502; }
-.l-yellow { color: #fed330; }
-.l-green { color: #20bf6b; }
+/* Neon Colors based on your 2nd picture but with glow */
+.b-100 { background: #4dfc18; box-shadow: 0 0 15px #4dfc18; }
+.b-50  { background: #ff00ff; box-shadow: 0 0 15px #ff00ff; }
+.b-20  { background: #00ffff; box-shadow: 0 0 15px #00ffff; }
+.b-10  { background: #1e90ff; box-shadow: 0 0 15px #1e90ff; }
+.b-5   { background: #00ced1; box-shadow: 0 0 15px #00ced1; }
+.b-negative { background: #ff4d4d; box-shadow: 0 0 15px #ff4d4d; }
 
 #leaderboard {
     position: absolute;
     top: 20px;
     left: 20px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 2px solid #53fc18;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #4dfc18;
     padding: 15px;
-    border-radius: 10px;
+    border-radius: 8px;
     color: white;
-    min-width: 160px;
-}
-
-#leaderboard h3 {
-    margin: 0 0 10px 0;
-    font-size: 14px;
-    color: #53fc18;
-    text-align: center;
-}
-
-#leaderboard-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    font-size: 14px;
+    min-width: 150px;
+    box-shadow: 0 0 20px rgba(77, 252, 24, 0.2);
 }
