@@ -11,7 +11,9 @@ const render = Render.create({
 });
 
 // Pegs - Triangle calibrated for 600px width
-for (let i = 0; i < 15; i++) {
+// Pegs - Triangle calibrated for 600px width
+// Starting i at 1 removes the single top peg
+for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
         const x = 300 + (j - i / 2) * 36;
         const y = 80 + i * 40;
