@@ -31,12 +31,19 @@ World.add(world, [
 ]);
 
 // --- PEGS ---
-for (let i = 1; i < 15; i++) {
-    for (let j = 0; j <= i; j++) {
-        const x = 300 + (j - i / 2) * 41.5; 
-        const y = 80 + i * 44; 
+// --- PEGS (Matches your screenshot layout) ---
+const rows = 16; // Slightly more rows for that taller look
+for (let i = 0; i < rows; i++) {
+    // Starting with 3 pegs at the top row instead of 1
+    const pegsInRow = i + 3; 
+    for (let j = 0; j < pegsInRow; j++) {
+        // Center the rows
+        const x = 300 + (j - (pegsInRow - 1) / 2) * 32; 
+        const y = 120 + i * 38; // Adjusted vertical spacing
+        
         World.add(world, Bodies.circle(x, y, 3, { 
             isStatic: true, 
+            restitution: 0.5,
             render: { fillStyle: '#ffffff' } 
         }));
     }
@@ -174,6 +181,26 @@ database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapsh
             </span> 
             <span style="font-weight: bold; color: white;">${p.pts} Balls</span>`;
         list.appendChild(li);
+    });
+});
+Events.on(render, 'afterRender', () => {
+    const { context } = render;
+    context.font = "bold 16px Arial";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+
+    bucketValues.forEach((val, i) => {
+        const x = (i * bWidth) + (bWidth / 2);
+        const y = 750; // Aligns with your sensor Y
+
+        // 1. Draw Black Outline
+        context.strokeStyle = "#000000";
+        context.lineWidth = 4;
+        context.strokeText(val, x, y);
+
+        // 2. Draw White Text
+        context.fillStyle = "#ffffff";
+        context.fillText(val, x, y);
     });
 });
 
