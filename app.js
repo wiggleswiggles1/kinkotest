@@ -10,9 +10,21 @@ const render = Render.create({
     options: { width: 600, height: 800, wireframes: false, background: 'transparent' }
 });
 
-// Pegs - Triangle calibrated for 600px width
-// Pegs - Triangle calibrated for 600px width
-// Starting i at 1 removes the single top peg
+// --- NOTIFICATION SYSTEM ---
+function showNoti(text, type = '') {
+    const container = document.getElementById('notification-container');
+    if (!container) return; // Safety check
+    
+    const noti = document.createElement('div');
+    noti.className = `noti ${type}`;
+    noti.innerHTML = text;
+    container.appendChild(noti);
+
+    // Auto-remove after animation ends (matches CSS)
+    setTimeout(() => { noti.remove(); }, 5000);
+}
+
+// --- PEGS ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
         const x = 300 + (j - i / 2) * 36;
@@ -24,7 +36,7 @@ for (let i = 1; i < 15; i++) {
     }
 }
 
-// Sensors (Must line up with CSS boxes)
+// --- BUCKET SENSORS ---
 const bucketValues = [100, 50, 35, 20, 10, 5, 1, -1, -2, -1, 1, 5, 10, 20, 35, 50, 100];
 const bWidth = 590 / bucketValues.length;
 
@@ -39,10 +51,12 @@ bucketValues.forEach((val, i) => {
     World.add(world, sensor);
 });
 
+// --- DROP BALL ---
 function dropBall(username) {
     const ball = Bodies.circle(300 + (Math.random() * 4 - 2), 20, 8, {
-        restitution: 0.5,
-        friction: 0.01,
+        restitution: 0.2, 
+        friction: 0.1,    
+        frictionAir: 0.02, 
         label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
@@ -50,16 +64,23 @@ function dropBall(username) {
     World.add(world, ball);
 }
 
-// Collisions & Data Logic
+// --- COLLISIONS & WIN NOTIFICATIONS ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
         const isBucket = (b) => b.label && b.label.startsWith('bucket-');
+        
         if (isBucket(bodyA) || isBucket(bodyB)) {
             const bucket = isBucket(bodyA) ? bodyA : bodyB;
             const ball = isBucket(bodyA) ? bodyB : bodyA;
+            
             if (ball.label === 'ball' && ball.username) {
                 const amount = parseInt(bucket.label.split('-')[1]);
+                
+                // Trigger On-Screen Notification for Wins
+                const winType = amount >= 35 ? 'noti-bigwin' : '';
+                showNoti(`🎰 @${ball.username} landed on ${amount}!`, winType);
+
                 const userRef = database.ref(`users/${ball.username.toLowerCase()}`);
                 userRef.transaction((data) => {
                     if (!data) return { points: 100 + amount, wins: amount };
@@ -73,7 +94,7 @@ Events.on(engine, 'collisionStart', (event) => {
     });
 });
 
-// Drop listener
+// --- DROP LISTENER ---
 database.ref('drops').on('child_added', (snapshot) => {
     const data = snapshot.val();
     if (data?.username) {
@@ -82,9 +103,10 @@ database.ref('drops').on('child_added', (snapshot) => {
     }
 });
 
-// UI Updater for Leaderboard
+// --- UI UPDATER ---
 database.ref('users').orderByChild('points').limitToLast(5).on('value', (snapshot) => {
     const list = document.getElementById('leaderboard-list');
+    if (!list) return;
     list.innerHTML = '';
     let players = [];
     snapshot.forEach(c => players.push({ name: c.key, pts: c.val().points || 0 }));
@@ -93,6 +115,38 @@ database.ref('users').orderByChild('points').limitToLast(5).on('value', (snapsho
         li.innerHTML = `<span style="color:#53fc18">@${p.name}</span> $${p.pts}`;
         list.appendChild(li);
     });
+});
+
+// --- ADMIN COMMAND LISTENER + NOTIFICATIONS ---
+database.ref('admin_commands').on('child_added', (snapshot) => {
+    const cmd = snapshot.val();
+    if (cmd && cmd.username && cmd.amount !== undefined) {
+        
+        // Trigger On-Screen Notification for Admin Action
+        const label = cmd.type === 'set' ? 'SET TO' : 'ADDED';
+        showNoti(`🛠️ ADMIN: ${label} ${cmd.amount} Balls for @${cmd.username}`, 'noti-admin');
+
+        const userRef = database.ref(`users/${cmd.username.toLowerCase()}`);
+        userRef.transaction((currentData) => {
+            if (cmd.type === 'set') {
+                return { 
+                    ...currentData, 
+                    points: cmd.amount,
+                    wins: currentData ? currentData.wins : 0 
+                };
+            } else if (cmd.type === 'add') {
+                if (!currentData) {
+                    return { points: cmd.amount, wins: 0 };
+                } else {
+                    currentData.points = (currentData.points || 0) + cmd.amount;
+                    return currentData;
+                }
+            }
+        });
+
+        console.log(`Admin action processed for ${cmd.username}`);
+        database.ref('admin_commands/' + snapshot.key).remove();
+    }
 });
 
 Render.run(render);
