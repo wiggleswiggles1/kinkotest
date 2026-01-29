@@ -96,13 +96,13 @@ body {
 #notification-container {
     position: absolute;
     top: 50px;
-    right: 10px; /* Moves them back inside the 600px board */
+    right: 10px; 
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Newest on bottom */
     gap: 8px;
     z-index: 9999; 
     width: 200px;
-    pointer-events: none; /* Allows you to click 'through' them if needed */
+    pointer-events: none;
 }
 /* Add this to your style.css */
 .bucket-label {
