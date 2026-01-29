@@ -81,7 +81,7 @@ async function processQueue() {
     isProcessingQueue = false;
 }
 
-// --- COLLISIONS (FIXED POINT JUMPING) ---
+// --- COLLISIONS (STRICT POINT LOGIC) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -100,20 +100,27 @@ Events.on(engine, 'collisionStart', (event) => {
                     showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
-                // FIXED TRANSACTION: Removed the +100 starting bonus from here
+                // --- TRANSACTION FIX ---
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
+                    // If the user somehow isn't in the DB, just record the bucket value
+                    // Do NOT add STARTING_POINTS here; that is the Bot's job.
                     if (!data) {
-                        // Create new user with just the result of this ball
                         return { 
                             points: Math.max(0, amount), 
                             wins: (amount > 0 ? amount : 0) 
                         };
                     }
-                    // Apply win/loss to existing balance
+                    
+                    // Add the bucket value to current points
                     data.points = Math.max(0, (data.points || 0) + amount);
-                    if (amount > 0) data.wins = (data.wins || 0) + amount;
+                    
+                    // Add to total wins if positive
+                    if (amount > 0) {
+                        data.wins = (data.wins || 0) + amount;
+                    }
                     return data;
                 });
+                
                 World.remove(world, ball);
             }
         }
