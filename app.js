@@ -26,31 +26,29 @@ const wallOptions = { isStatic: true, render: { visible: false } };
 World.add(world, [
     Bodies.rectangle(-5, 400, 10, 800, wallOptions),
     Bodies.rectangle(605, 400, 10, 800, wallOptions),
-    Bodies.rectangle(160, 40, 220, 10, { isStatic: true, angle: Math.PI / 5, render: { visible: false } }),
-    Bodies.rectangle(440, 40, 220, 10, { isStatic: true, angle: -Math.PI / 5, render: { visible: false } })
+    // Narrower funnel to guide balls into the center-top row
+    Bodies.rectangle(180, 50, 200, 10, { isStatic: true, angle: Math.PI / 6, render: { visible: false } }),
+    Bodies.rectangle(420, 50, 200, 10, { isStatic: true, angle: -Math.PI / 6, render: { visible: false } })
 ]);
 
-// --- PEGS ---
-// --- PEGS (Matches your screenshot layout) ---
-const rows = 16; // Slightly more rows for that taller look
+// --- PEGS (Trapezoid Top Layout) ---
+const rows = 16; 
 for (let i = 0; i < rows; i++) {
-    // Starting with 3 pegs at the top row instead of 1
     const pegsInRow = i + 3; 
     for (let j = 0; j < pegsInRow; j++) {
-        // Center the rows
         const x = 300 + (j - (pegsInRow - 1) / 2) * 32; 
-        const y = 120 + i * 38; // Adjusted vertical spacing
+        const y = 120 + i * 38; 
         
         World.add(world, Bodies.circle(x, y, 3, { 
             isStatic: true, 
-            restitution: 0.5,
+            restitution: 0.4, // Controlled bounce
             render: { fillStyle: '#ffffff' } 
         }));
     }
 }
 
-// --- BUCKET SENSORS ---
-const bucketValues = [100, 50, 25, 15, 10, 5, 1, -1, -2, -1, 1, 5, 10, 15, 25, 50, 100];
+// --- BUCKET SENSORS & COLORS ---
+const bucketValues = [100, 50, 35, 20, 10, 5, 1, -1, -2, -1, 1, 5, 10, 20, 35, 50, 100];
 const totalWidth = 600;
 const bWidth = totalWidth / bucketValues.length;
 
@@ -62,22 +60,22 @@ bucketValues.forEach((val, i) => {
     World.add(world, sensor);
 });
 
-// --- DROP BALL (New Physics & Random Nudge) ---
+// --- DROP BALL (Balanced Physics) ---
 function dropBall(username) {
-    // Tightened spawn range (±5 instead of ±10) to keep it controlled
+    // Tight drop zone (±5) to favor center but allow deviation
     const spawnX = 300 + (Math.random() * 10 - 5); 
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.3,   // Reduced from 0.5 (More predictable)
-        friction: 0.05,     // Increased from 0.005 (Gives it a bit of grip)
-        frictionAir: 0.03,  // Increased from 0.02 (Slows the fall slightly)
+        restitution: 0.3,   // Predictable bounciness
+        friction: 0.05,     // Some grip for natural rolling
+        frictionAir: 0.04,  // Higher air resistance keeps it from flying to edges
         label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
     World.add(world, ball);
 
-    // Tiny nudge (reduced by 50%) just to break the "perfect center" trap
-    const force = (Math.random() - 0.5) * 0.001;
+    // Minor nudge to ensure balls don't get perfectly stuck
+    const force = (Math.random() - 0.5) * 0.0008;
     Matter.Body.applyForce(ball, ball.position, { x: force, y: 0 });
 }
 
@@ -96,8 +94,7 @@ async function processQueue() {
     isProcessingQueue = false;
 }
 
-// --- COLLISIONS (STRICT POINT LOGIC) ---
-// --- COLLISIONS (NO MORE JUMPING) ---
+// --- COLLISIONS ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -110,19 +107,14 @@ Events.on(engine, 'collisionStart', (event) => {
             if (ball.label === 'ball' && ball.username) {
                 const amount = parseInt(bucket.label.slice(7));
                 
-                // Show the notification immediately
                 if (amount < 0) {
                     showNoti(`💀 @${ball.username} lost ${Math.abs(amount)} Balls!`, 'noti-admin');
                 } else {
                     showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
-                // Update Firebase: ONLY add the amount from the bucket
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
-                    // If user doesn't exist yet, we don't give a bonus here. 
-                    // The bot handles the 250 starting points.
                     if (!data) return null; 
-
                     data.points = Math.max(0, (data.points || 0) + amount);
                     if (amount > 0) data.wins = (data.wins || 0) + amount;
                     return data;
@@ -144,61 +136,23 @@ database.ref('drops').on('child_added', (snapshot) => {
     }
 });
 
-database.ref('admin_commands').on('child_added', (snapshot) => {
-    const cmd = snapshot.val();
-    if (cmd && cmd.username) {
-        let message = "";
-        let type = "noti-admin";
-        if (cmd.giftedBy) {
-            message = `🎁 GIFT: @${cmd.giftedBy} sent ${cmd.amount} Balls to @${cmd.username}`;
-            type = "noti-bigwin";
-        } else {
-            const label = cmd.type === 'set' ? 'SET' : 'ADD';
-            message = `🛠️ ADMIN: ${label} ${cmd.amount} Balls for @${cmd.username}`;
-            database.ref(`users/${cmd.username.toLowerCase()}/points`).transaction((pts) => 
-                cmd.type === 'set' ? cmd.amount : (pts || 0) + cmd.amount
-            );
-        }
-        showNoti(message, type);
-        database.ref('admin_commands/' + snapshot.key).remove();
-    }
-});
-
-// --- LEADERBOARD ---
-database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapshot) => {
-    const list = document.getElementById('leaderboard-list');
-    if (!list) return;
-    list.innerHTML = '';
-    let players = [];
-    snapshot.forEach(c => players.push({ name: c.key, pts: c.val().points || 0 }));
-    players.reverse().forEach((p, i) => {
-        const li = document.createElement('li');
-        const isFirst = i === 0;
-        li.innerHTML = `
-            <span style="color: #888; width: 22px; display: inline-block;">${i + 1}.</span> 
-            <span class="${isFirst ? 'top-player' : ''}" style="color: ${isFirst ? '#ffd700' : '#53fc18'}; flex: 1;">
-                ${isFirst ? '👑 ' : ''}${p.name}
-            </span> 
-            <span style="font-weight: bold; color: white;">${p.pts} Balls</span>`;
-        list.appendChild(li);
-    });
-});
+// --- OUTLINED RENDERING ---
 Events.on(render, 'afterRender', () => {
     const { context } = render;
-    context.font = "bold 16px Arial";
+    context.font = "bold 18px Arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
 
     bucketValues.forEach((val, i) => {
         const x = (i * bWidth) + (bWidth / 2);
-        const y = 750; // Aligns with your sensor Y
+        const y = 750; 
 
-        // 1. Draw Black Outline
+        // Black Stroke
         context.strokeStyle = "#000000";
         context.lineWidth = 4;
         context.strokeText(val, x, y);
 
-        // 2. Draw White Text
+        // White Fill
         context.fillStyle = "#ffffff";
         context.fillText(val, x, y);
     });
