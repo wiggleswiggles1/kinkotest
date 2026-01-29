@@ -30,14 +30,13 @@ World.add(world, [
     Bodies.rectangle(440, 40, 220, 10, { isStatic: true, angle: -Math.PI / 5, render: { visible: false } })
 ]);
 
-// --- PEGS (Updated for more sideways bounce) ---
+// --- PEGS ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
-        const x = 300 + (j - i / 2) * 42; // Spacing adjusted for bounce
+        const x = 300 + (j - i / 2) * 41.5; 
         const y = 80 + i * 44; 
-        World.add(world, Bodies.circle(x, y, 2.5, { // Slightly smaller pegs for more room
+        World.add(world, Bodies.circle(x, y, 3, { 
             isStatic: true, 
-            restitution: 1.0, // Pegs are now bouncy
             render: { fillStyle: '#ffffff' } 
         }));
     }
@@ -91,6 +90,7 @@ async function processQueue() {
 }
 
 // --- COLLISIONS (STRICT POINT LOGIC) ---
+// --- COLLISIONS (NO MORE JUMPING) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -103,13 +103,17 @@ Events.on(engine, 'collisionStart', (event) => {
             if (ball.label === 'ball' && ball.username) {
                 const amount = parseInt(bucket.label.slice(7));
                 
+                // Show the notification immediately
                 if (amount < 0) {
                     showNoti(`💀 @${ball.username} lost ${Math.abs(amount)} Balls!`, 'noti-admin');
                 } else {
                     showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
+                // Update Firebase: ONLY add the amount from the bucket
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
+                    // If user doesn't exist yet, we don't give a bonus here. 
+                    // The bot handles the 250 starting points.
                     if (!data) return null; 
 
                     data.points = Math.max(0, (data.points || 0) + amount);
