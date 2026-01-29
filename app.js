@@ -136,6 +136,27 @@ database.ref('drops').on('child_added', (snapshot) => {
         database.ref('drops/' + snapshot.key).remove();
     }
 });
+// --- ADMIN COMMANDS LISTENER ---
+database.ref('admin_commands').on('child_added', (snapshot) => {
+    const cmd = snapshot.val();
+    if (!cmd) return;
+
+    if (cmd.type === 'reset_all') {
+        // 1. Physically remove all active balls from the Matter.js world
+        const activeBalls = world.bodies.filter(b => b.label === 'ball');
+        activeBalls.forEach(ball => World.remove(world, ball));
+
+        // 2. Clear the visual leaderboard list immediately
+        const list = document.getElementById('leaderboard-list');
+        if (list) list.innerHTML = '';
+
+        // 3. Show a reset notification
+        showNoti("SYSTEM: GAME RESET BY ADMIN", "noti-admin");
+    }
+
+    // Clean up the command after processing so it doesn't trigger on refresh
+    database.ref('admin_commands/' + snapshot.key).remove();
+});
 
 // --- LEADERBOARD (Points Based) ---
 database.ref('users').orderByChild('points').limitToLast(5).on('value', (snapshot) => {
