@@ -21,28 +21,21 @@ function showNoti(text, type = '') {
     setTimeout(() => { noti.remove(); }, 5000);
 }
 
-// --- WALLS & FUNNEL (Keeps balls on board) ---
+// --- WALLS & FUNNEL ---
 const wallOptions = { isStatic: true, render: { visible: false } };
 World.add(world, [
-    // Left boundary wall
     Bodies.rectangle(-5, 400, 10, 800, wallOptions),
-    // Right boundary wall
     Bodies.rectangle(605, 400, 10, 800, wallOptions),
-    // Funnel Left (Diagonals at the top)
+    // Funnel guiding balls toward the center mouth
     Bodies.rectangle(160, 40, 220, 10, { isStatic: true, angle: Math.PI / 5, render: { visible: false } }),
-    // Funnel Right
     Bodies.rectangle(440, 40, 220, 10, { isStatic: true, angle: -Math.PI / 5, render: { visible: false } })
 ]);
 
-
-// --- PEGS ---
 // --- PEGS (Wider to match buckets) ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
-        // 41.5 spacing ensures the bottom row spreads out to the edges
         const x = 300 + (j - i / 2) * 41.5; 
-        const y = 80 + i * 44; // Slightly increased vertical spacing for a smoother roll
-        
+        const y = 80 + i * 44; 
         World.add(world, Bodies.circle(x, y, 3, { 
             isStatic: true, 
             render: { fillStyle: '#ffffff' } 
@@ -50,7 +43,7 @@ for (let i = 1; i < 15; i++) {
     }
 }
 
-// --- BUCKET SENSORS (Width Synced to 600px) ---
+// --- BUCKET SENSORS ---
 const bucketValues = [100, 50, 25, 15, 10, 5, 1, -1, -2, -1, 1, 5, 10, 15, 25, 50, 100];
 const totalWidth = 600;
 const bWidth = totalWidth / bucketValues.length;
@@ -58,23 +51,18 @@ const bWidth = totalWidth / bucketValues.length;
 bucketValues.forEach((val, i) => {
     const x = (i * bWidth) + (bWidth / 2);
     const sensor = Bodies.rectangle(x, 750, bWidth, 60, {
-        isStatic: true,
-        isSensor: true,
-        label: `bucket-${val}`,
-        render: { visible: false }
+        isStatic: true, isSensor: true, label: `bucket-${val}`, render: { visible: false }
     });
     World.add(world, sensor);
 });
 
-// --- DROP BALL (Tight Center Start) ---
+// --- DROP BALL (Heavier center bias) ---
 function dropBall(username) {
-    // Very tight spawn makes edge hits rare
-    const spawnX = 300 + (Math.random() * 6 - 3); 
-    
+    const spawnX = 300 + (Math.random() * 4 - 2); // Tight spawn range
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.15, // A tiny bit more bounce makes the movement look natural
-        friction: 0.05,
-        frictionAir: 0.025,
+        restitution: 0.1,  // Low bounce keeps it in the center
+        friction: 0.2,     // Grips pegs better
+        frictionAir: 0.04, // Falls with more weight
         label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
@@ -82,8 +70,24 @@ function dropBall(username) {
     World.add(world, ball);
 }
 
+// --- DROP QUEUE SYSTEM (Prevents overlapping/exploding) ---
+let dropQueue = [];
+let isProcessingQueue = false;
+
+async function processQueue() {
+    if (isProcessingQueue || dropQueue.length === 0) return;
+    isProcessingQueue = true;
+
+    while (dropQueue.length > 0) {
+        const username = dropQueue.shift();
+        dropBall(username);
+        // 300ms delay between balls ensures they don't hit each other
+        await new Promise(resolve => setTimeout(resolve, 300)); 
+    }
+    isProcessingQueue = false;
+}
+
 // --- COLLISIONS ---
-// --- COLLISIONS (FIXED FOR NEGATIVES) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -94,30 +98,20 @@ Events.on(engine, 'collisionStart', (event) => {
             const ball = isBucket(bodyA) ? bodyB : bodyA;
             
             if (ball.label === 'ball' && ball.username) {
-                // Fix: slice(7) removes 'bucket-' and keeps the rest, including the minus sign
                 const amount = parseInt(bucket.label.slice(7));
                 
-                // Better notification text for losses vs wins
                 if (amount < 0) {
                     showNoti(`💀 @${ball.username} lost ${Math.abs(amount)} Balls!`, 'noti-admin');
                 } else {
-                    showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 35 ? 'noti-bigwin' : '');
+                    showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
-                // Update Firebase
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
                     if (!data) return { points: 100 + amount, wins: (amount > 0 ? amount : 0) };
-                    
-                    // Math.max(0, ...) ensures they don't go below 0 balls total
                     data.points = Math.max(0, (data.points || 0) + amount);
-                    
-                    // Only add to 'wins' if it was a positive result
-                    if (amount > 0) {
-                        data.wins = (data.wins || 0) + amount;
-                    }
+                    if (amount > 0) data.wins = (data.wins || 0) + amount;
                     return data;
                 });
-                
                 World.remove(world, ball);
             }
         }
@@ -128,8 +122,8 @@ Events.on(engine, 'collisionStart', (event) => {
 database.ref('drops').on('child_added', (snapshot) => {
     const data = snapshot.val();
     if (data?.username) {
-        const stagger = Math.random() * 500; 
-        setTimeout(() => { dropBall(data.username); }, stagger);
+        dropQueue.push(data.username);
+        processQueue();
         database.ref('drops/' + snapshot.key).remove();
     }
 });
@@ -146,19 +140,16 @@ database.ref('admin_commands').on('child_added', (snapshot) => {
         } else {
             const label = cmd.type === 'set' ? 'SET' : 'ADD';
             message = `🛠️ ADMIN: ${label} ${cmd.amount} Balls for @${cmd.username}`;
-            
-            // Only handle the transaction if it's NOT a gift (bot handles gifts)
             database.ref(`users/${cmd.username.toLowerCase()}/points`).transaction((pts) => 
                 cmd.type === 'set' ? cmd.amount : (pts || 0) + cmd.amount
             );
         }
-
         showNoti(message, type);
         database.ref('admin_commands/' + snapshot.key).remove();
     }
 });
 
-// --- LEADERBOARD TOP 10 ---
+// --- LEADERBOARD ---
 database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapshot) => {
     const list = document.getElementById('leaderboard-list');
     if (!list) return;
