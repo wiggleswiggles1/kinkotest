@@ -85,8 +85,8 @@ body {
 
 .b-100 { background: #4dfc18; box-shadow: 0 0 12px #4dfc18; }
 .b-50  { background: #ff007f; box-shadow: 0 0 12px #ff007f; }
-.b-35  { background: #007bff; box-shadow: 0 0 12px #007bff; }
-.b-20  { background: #00d4ff; box-shadow: 0 0 12px #00d4ff; }
+.b-25  { background: #007bff; box-shadow: 0 0 12px #007bff; }
+.b-15  { background: #00d4ff; box-shadow: 0 0 12px #00d4ff; }
 .b-10  { background: #17a2b8; box-shadow: 0 0 12px #17a2b8; }
 .b-5   { background: #20c997; box-shadow: 0 0 12px #20c997; }
 .b-1   { background: #00cccc; box-shadow: 0 0 12px #00cccc; }
