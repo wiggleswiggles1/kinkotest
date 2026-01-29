@@ -6,27 +6,26 @@ body {
     font-family: 'Arial Black', sans-serif;
 }
 
+#leaderboard {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 999; /* Force it to the very front */
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #53fc18; /* Thicker border */
+    padding: 10px;
+    border-radius: 8px;
+    width: 180px;
+    box-shadow: 0 0 20px rgba(83, 252, 24, 0.3); /* Green glow */
+}
+
+/* Ensure the wrapper doesn't clip the leaderboard */
 .game-wrapper {
     position: relative;
     width: 600px;
     height: 800px;
     margin: 0 auto;
-}
-
-/* LEADERBOARD SHIFTED LEFT */
-#leaderboard {
-    position: absolute;
-    top: 20px;
-    left: 10px;
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid #53fc18;
-    padding: 10px;
-    border-radius: 8px;
-    width: 170px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-    transform: scale(0.9);
-    transform-origin: top left;
+    overflow: visible; /* Changed from default to ensure things aren't cut off */
 }
 
 #leaderboard h3 {
