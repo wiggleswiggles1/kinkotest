@@ -1,35 +1,79 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: transparent; /* Changed to transparent for stream overlays */
+    overflow: hidden;
+    font-family: 'Arial Black', sans-serif;
+}
+
+.game-wrapper {
+    position: relative;
+    width: 600px;
+    height: 800px; /* Tall enough to fit everything */
+    margin: 0 auto;
+}
+
+/* LEADERBOARD BOX */
+#leaderboard {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #53fc18;
+    padding: 12px;
+    border-radius: 10px;
+    min-width: 150px;
+    box-shadow: 0 0 15px rgba(83, 252, 24, 0.4);
+}
+
+.lb-header {
+    color: #53fc18;
+    font-size: 14px;
+    text-align: center;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+}
+
+#leaderboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: white;
+    font-size: 13px;
+}
+
+/* MULTIPLIER BOXES */
 #bucket-container {
     position: absolute;
-    bottom: 20px; /* Align this to the bottom of your game board */
+    bottom: 40px; /* Adjust this so it touches the bottom pegs */
     width: 600px;
     display: flex;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     padding: 0 5px;
     box-sizing: border-box;
 }
 
 .sq {
     flex: 1;
-    height: 40px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 11px;
     color: white;
-    border-radius: 5px;
-    /* This makes the neon glow */
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    text-shadow: 0 0 5px rgba(0,0,0,0.8);
+    border-radius: 4px;
+    text-shadow: 0 0 5px black;
 }
 
-/* Specific Multiplier Colors with Glow */
-.b-100 { background: #4dfc18; box-shadow: 0 0 15px #4dfc18; }
-.b-50  { background: #ff007f; box-shadow: 0 0 15px #ff007f; }
-.b-35  { background: #007bff; box-shadow: 0 0 15px #007bff; }
-.b-20  { background: #00d4ff; box-shadow: 0 0 15px #00d4ff; }
-.b-10  { background: #17a2b8; box-shadow: 0 0 15px #17a2b8; }
-.b-5   { background: #20c997; box-shadow: 0 0 15px #20c997; }
-.b-1   { background: #00cccc; box-shadow: 0 0 15px #00cccc; }
-.b-neg { background: #ff4d4d; box-shadow: 0 0 15px #ff4d4d; }
+/* NEON GLOWS */
+.b-100 { background: #4dfc18; box-shadow: 0 0 12px #4dfc18; }
+.b-50  { background: #ff007f; box-shadow: 0 0 12px #ff007f; }
+.b-35  { background: #007bff; box-shadow: 0 0 12px #007bff; }
+.b-20  { background: #00d4ff; box-shadow: 0 0 12px #00d4ff; }
+.b-10  { background: #17a2b8; box-shadow: 0 0 12px #17a2b8; }
+.b-5   { background: #20c997; box-shadow: 0 0 12px #20c997; }
+.b-1   { background: #00cccc; box-shadow: 0 0 12px #00cccc; }
+.b-neg { background: #ff4d4d; box-shadow: 0 0 12px #ff4d4d; }
