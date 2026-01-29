@@ -36,11 +36,12 @@ World.add(world, [
 
 
 // --- PEGS ---
+// --- PEGS (Wider to match buckets) ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
-        // Reduced horizontal spacing (from 36 to 32) makes it harder to bounce wide
-        const x = 300 + (j - i / 2) * 32; 
-        const y = 80 + i * 40;
+        // 41.5 spacing ensures the bottom row spreads out to the edges
+        const x = 300 + (j - i / 2) * 41.5; 
+        const y = 80 + i * 44; // Slightly increased vertical spacing for a smoother roll
         
         World.add(world, Bodies.circle(x, y, 3, { 
             isStatic: true, 
@@ -65,15 +66,15 @@ bucketValues.forEach((val, i) => {
     World.add(world, sensor);
 });
 
-// --- DROP BALL (Centered & Heavy) ---
+// --- DROP BALL (Tight Center Start) ---
 function dropBall(username) {
-    // Spawns in a very narrow 10px range to favor the center path
-    const spawnX = 300 + (Math.random() * 10 - 5);
+    // Very tight spawn makes edge hits rare
+    const spawnX = 300 + (Math.random() * 6 - 3); 
     
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.1,  // Reduced bounce further to prevent wild sideways kicks
-        friction: 0.05,    // Less friction helps them slide down the "gut"
-        frictionAir: 0.03, // Slightly more air resistance keeps them controlled
+        restitution: 0.15, // A tiny bit more bounce makes the movement look natural
+        friction: 0.05,
+        frictionAir: 0.025,
         label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
