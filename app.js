@@ -79,9 +79,19 @@ Events.on(engine, 'collisionStart', (event) => {
 });
 
 // --- FIREBASE LISTENERS ---
+// Drop listener with a slight stagger
 database.ref('drops').on('child_added', (snapshot) => {
     const data = snapshot.val();
-    if (data?.username) { dropBall(data.username); database.ref('drops/' + snapshot.key).remove(); }
+    if (data?.username) {
+        // Random delay between 0 and 500ms so balls don't overlap perfectly
+        const stagger = Math.random() * 500; 
+        
+        setTimeout(() => {
+            dropBall(data.username);
+        }, stagger);
+
+        database.ref('drops/' + snapshot.key).remove();
+    }
 });
 
 database.ref('admin_commands').on('child_added', (snapshot) => {
