@@ -21,7 +21,20 @@ function showNoti(text, type = '') {
     setTimeout(() => { noti.remove(); }, 5000);
 }
 
-// --- PEGS (Row 1 Removed for Mouth) ---
+// --- WALLS & FUNNEL (Keeps balls on board) ---
+const wallOptions = { isStatic: true, render: { visible: false } };
+World.add(world, [
+    // Left boundary wall
+    Bodies.rectangle(-5, 400, 10, 800, wallOptions),
+    // Right boundary wall
+    Bodies.rectangle(605, 400, 10, 800, wallOptions),
+    // Funnel Left (Diagonals at the top)
+    Bodies.rectangle(160, 40, 220, 10, { isStatic: true, angle: Math.PI / 5, render: { visible: false } }),
+    // Funnel Right
+    Bodies.rectangle(440, 40, 220, 10, { isStatic: true, angle: -Math.PI / 5, render: { visible: false } })
+]);
+
+// --- PEGS ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
         const x = 300 + (j - i / 2) * 36;
@@ -33,21 +46,31 @@ for (let i = 1; i < 15; i++) {
     }
 }
 
-// --- BUCKET SENSORS ---
+// --- BUCKET SENSORS (Width Synced to 600px) ---
 const bucketValues = [100, 50, 35, 20, 10, 5, 1, -1, -2, -1, 1, 5, 10, 20, 35, 50, 100];
-const bWidth = 590 / bucketValues.length;
+const totalWidth = 600;
+const bWidth = totalWidth / bucketValues.length;
+
 bucketValues.forEach((val, i) => {
-    const x = 5 + (i * bWidth) + (bWidth / 2);
-    const sensor = Bodies.rectangle(x, 740, bWidth - 4, 40, {
-        isStatic: true, isSensor: true, label: `bucket-${val}`, render: { visible: false }
+    const x = (i * bWidth) + (bWidth / 2);
+    const sensor = Bodies.rectangle(x, 750, bWidth, 60, {
+        isStatic: true,
+        isSensor: true,
+        label: `bucket-${val}`,
+        render: { visible: false }
     });
     World.add(world, sensor);
 });
 
-// --- DROP BALL (Heavy Physics) ---
+// --- DROP BALL (Centered & Heavy) ---
 function dropBall(username) {
-    const ball = Bodies.circle(300 + (Math.random() * 4 - 2), 20, 8, {
-        restitution: 0.2, friction: 0.1, frictionAir: 0.02, label: 'ball',
+    // Spawns in a narrow 30px "mouth" at the top
+    const spawnX = 300 + (Math.random() * 30 - 15);
+    const ball = Bodies.circle(spawnX, 10, 8, {
+        restitution: 0.2, 
+        friction: 0.1, 
+        frictionAir: 0.02, 
+        label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
@@ -69,7 +92,7 @@ Events.on(engine, 'collisionStart', (event) => {
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
                     if (!data) return { points: 100 + amount, wins: amount };
                     data.points = (data.points || 0) + amount;
-                    data.wins = (data.wins || 0) + amount;
+                    data.wins = (data.wins || 0) + (amount > 0 ? amount : 0);
                     return data;
                 });
                 World.remove(world, ball);
@@ -79,17 +102,11 @@ Events.on(engine, 'collisionStart', (event) => {
 });
 
 // --- FIREBASE LISTENERS ---
-// Drop listener with a slight stagger
 database.ref('drops').on('child_added', (snapshot) => {
     const data = snapshot.val();
     if (data?.username) {
-        // Random delay between 0 and 500ms so balls don't overlap perfectly
         const stagger = Math.random() * 500; 
-        
-        setTimeout(() => {
-            dropBall(data.username);
-        }, stagger);
-
+        setTimeout(() => { dropBall(data.username); }, stagger);
         database.ref('drops/' + snapshot.key).remove();
     }
 });
@@ -97,36 +114,27 @@ database.ref('drops').on('child_added', (snapshot) => {
 database.ref('admin_commands').on('child_added', (snapshot) => {
     const cmd = snapshot.val();
     if (cmd && cmd.username) {
-        showNoti(`🛠️ ADMIN: ${cmd.type === 'set' ? 'SET' : 'ADD'} ${cmd.amount} Balls for @${cmd.username}`, 'noti-admin');
-        database.ref(`users/${cmd.username.toLowerCase()}/points`).transaction((pts) => 
-            cmd.type === 'set' ? cmd.amount : (pts || 0) + cmd.amount
-        );
-        database.ref('admin_commands/' + snapshot.key).remove();
-    }
-});
-database.ref('admin_commands').on('child_added', (snapshot) => {
-    const cmd = snapshot.val();
-    if (cmd && cmd.username) {
         let message = "";
         let type = "noti-admin";
 
         if (cmd.giftedBy) {
-            // It's a gift from another user
             message = `🎁 GIFT: @${cmd.giftedBy} sent ${cmd.amount} Balls to @${cmd.username}`;
-            type = "noti-bigwin"; // Give it the pink/fancy border
+            type = "noti-bigwin";
         } else {
-            // It's a standard admin command
             const label = cmd.type === 'set' ? 'SET' : 'ADD';
             message = `🛠️ ADMIN: ${label} ${cmd.amount} Balls for @${cmd.username}`;
+            
+            // Only handle the transaction if it's NOT a gift (bot handles gifts)
+            database.ref(`users/${cmd.username.toLowerCase()}/points`).transaction((pts) => 
+                cmd.type === 'set' ? cmd.amount : (pts || 0) + cmd.amount
+            );
         }
 
         showNoti(message, type);
-        
-        // Note: The bot handled the math in Firebase, 
-        // but we still clean up the command queue here.
         database.ref('admin_commands/' + snapshot.key).remove();
     }
 });
+
 // --- LEADERBOARD TOP 10 ---
 database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapshot) => {
     const list = document.getElementById('leaderboard-list');
@@ -138,11 +146,11 @@ database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapsh
         const li = document.createElement('li');
         const isFirst = i === 0;
         li.innerHTML = `
-            <span style="color: #888; width: 20px;">${i + 1}.</span> 
+            <span style="color: #888; width: 22px; display: inline-block;">${i + 1}.</span> 
             <span class="${isFirst ? 'top-player' : ''}" style="color: ${isFirst ? '#ffd700' : '#53fc18'}; flex: 1;">
                 ${isFirst ? '👑 ' : ''}${p.name}
             </span> 
-            <span style="font-weight: bold;">${p.pts} Balls</span>`;
+            <span style="font-weight: bold; color: white;">${p.pts} Balls</span>`;
         list.appendChild(li);
     });
 });
