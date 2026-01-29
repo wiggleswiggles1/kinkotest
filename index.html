@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Plinko - BALLS</title>
+    <title>Neon Plinko Overlay</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -13,21 +13,27 @@
         <div id="canvas-container"></div>
         
         <div id="bucket-container">
-            <div class="square-bucket b-100">100</div>
-            <div class="square-bucket b-50">50</div>
-            <div class="square-bucket b-20">20</div>
-            <div class="square-bucket b-10">10</div>
-            <div class="square-bucket b-5">5</div>
-            <div class="square-bucket b-negative">-5</div>
-            <div class="square-bucket b-5">5</div>
-            <div class="square-bucket b-10">10</div>
-            <div class="square-bucket b-20">20</div>
-            <div class="square-bucket b-50">50</div>
-            <div class="square-bucket b-100">100</div>
+            <div class="sq b-100">100</div>
+            <div class="sq b-50">50</div>
+            <div class="sq b-35">35</div>
+            <div class="sq b-20">20</div>
+            <div class="sq b-10">10</div>
+            <div class="sq b-5">5</div>
+            <div class="sq b-1">1</div>
+            <div class="sq b-neg">-1</div>
+            <div class="sq b-neg">-2</div>
+            <div class="sq b-neg">-1</div>
+            <div class="sq b-1">1</div>
+            <div class="sq b-5">5</div>
+            <div class="sq b-10">10</div>
+            <div class="sq b-20">20</div>
+            <div class="sq b-35">35</div>
+            <div class="sq b-50">50</div>
+            <div class="sq b-100">100</div>
         </div>
 
         <div id="leaderboard">
-            <h3>TOP BALLERS</h3>
+            <div class="lb-header">TOP WINNERS</div>
             <ul id="leaderboard-list"></ul>
         </div>
     </div>
