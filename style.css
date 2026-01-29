@@ -19,13 +19,13 @@ body {
     box-shadow: 0 0 20px rgba(83, 252, 24, 0.3); /* Green glow */
 }
 
-/* Ensure the wrapper doesn't clip the leaderboard */
 .game-wrapper {
     position: relative;
     width: 600px;
     height: 800px;
     margin: 0 auto;
-    overflow: visible; /* Crucial: allows notifications to show outside the 600px width */
+    /* This MUST be visible or the notifications 'behind the wall' stay hidden */
+    overflow: visible !important; 
 }
 
 #leaderboard h3 {
@@ -96,11 +96,13 @@ body {
 #notification-container {
     position: absolute;
     top: 50px;
-    right: -220px; /* Moves it 220px outside the game wrapper to the right */
+    /* Pushes it past the 600px board width */
+    left: 610px; 
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 100;
+    z-index: 9999; /* Ensure it's above everything */
+    width: 250px;
 }
 /* Add this to your style.css */
 .bucket-label {
