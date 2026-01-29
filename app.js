@@ -50,7 +50,7 @@ for (let i = 1; i < 15; i++) {
 }
 
 // --- BUCKET SENSORS (Width Synced to 600px) ---
-const bucketValues = [100, 50, 35, 20, 10, 5, 1, -1, -2, -1, 1, 5, 10, 20, 35, 50, 100];
+const bucketValues = [100, 50, 25, 15, 10, 5, 1, -1, -2, -1, 1, 5, 10, 15, 25, 50, 100];
 const totalWidth = 600;
 const bWidth = totalWidth / bucketValues.length;
 
