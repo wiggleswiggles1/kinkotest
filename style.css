@@ -1,25 +1,68 @@
 body {
     margin: 0;
+    background-color: transparent;
     overflow: hidden;
-    background-color: #0e0e0e; /* Dark Kick Background */
+    font-family: 'Arial Black', sans-serif;
+}
+
+.game-wrapper {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    margin: 0 auto;
 }
 
 #canvas-container {
     width: 600px;
     height: 600px;
-    margin: 0 auto;
-    position: relative;
-    border-bottom: 5px solid #53fc18; /* Green floor glow */
 }
+
+/* Position the multiplier labels over the physics buckets */
+#bucket-labels {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    pointer-events: none;
+}
+
+.label {
+    width: 70px;
+    text-align: center;
+    font-size: 18px;
+    color: white;
+    text-shadow: 0 0 8px rgba(0,0,0,1);
+}
+
+/* Neon Glow Colors */
+.l-red { color: #ff4d4d; }
+.l-orange { color: #ffa502; }
+.l-yellow { color: #fed330; }
+.l-green { color: #20bf6b; }
 
 #leaderboard {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid #53fc18;
-    padding: 10px;
-    border-radius: 5px;
-    font-family: 'Arial', sans-serif;
-    min-width: 140px;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #53fc18;
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    min-width: 160px;
+}
+
+#leaderboard h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #53fc18;
+    text-align: center;
+}
+
+#leaderboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
 }
