@@ -12,13 +12,29 @@ const render = Render.create({
 let notificationsEnabled = true;
 // --- NOTIFICATION SYSTEM ---
 function showNoti(text, type = '') {
+    if (!notificationsEnabled) return;
+
     const container = document.getElementById('notification-container');
     if (!container) return;
+
+    // --- LIMIT LOGIC ---
+    // If there are already 3 notifications, remove the oldest one immediately
+    while (container.children.length >= 3) {
+        container.removeChild(container.firstChild);
+    }
+
     const noti = document.createElement('div');
     noti.className = `noti ${type}`;
     noti.innerHTML = text;
+    
     container.appendChild(noti);
-    setTimeout(() => { noti.remove(); }, 5000);
+
+    // Remove automatically after 5 seconds
+    setTimeout(() => {
+        if (noti.parentNode === container) {
+            noti.remove();
+        }
+    }, 5000);
 }
 
 // --- WALLS & FUNNEL ---
