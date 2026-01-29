@@ -62,7 +62,7 @@ bucketValues.forEach((val, i) => {
 function dropBall(username) {
     const spawnX = 300 + (Math.random() * 6 - 3); // Narrower spawn for center favor
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.3, friction: 0.05, frictionAir: 0.05, label: 'ball',
+        restitution: 0.4, friction: 0.05, frictionAir: 0.05, label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
