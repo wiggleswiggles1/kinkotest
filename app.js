@@ -78,23 +78,41 @@ function dropBall(username) {
 }
 
 // --- COLLISIONS ---
+// --- COLLISIONS (FIXED FOR NEGATIVES) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
         const isBucket = (b) => b.label && b.label.startsWith('bucket-');
+        
         if (isBucket(bodyA) || isBucket(bodyB)) {
             const bucket = isBucket(bodyA) ? bodyA : bodyB;
             const ball = isBucket(bodyA) ? bodyB : bodyA;
+            
             if (ball.label === 'ball' && ball.username) {
-                const amount = parseInt(bucket.label.split('-')[1]);
-                showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 35 ? 'noti-bigwin' : '');
+                // Fix: slice(7) removes 'bucket-' and keeps the rest, including the minus sign
+                const amount = parseInt(bucket.label.slice(7));
                 
+                // Better notification text for losses vs wins
+                if (amount < 0) {
+                    showNoti(`💀 @${ball.username} lost ${Math.abs(amount)} Balls!`, 'noti-admin');
+                } else {
+                    showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 35 ? 'noti-bigwin' : '');
+                }
+                
+                // Update Firebase
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
-                    if (!data) return { points: 100 + amount, wins: amount };
-                    data.points = (data.points || 0) + amount;
-                    data.wins = (data.wins || 0) + (amount > 0 ? amount : 0);
+                    if (!data) return { points: 100 + amount, wins: (amount > 0 ? amount : 0) };
+                    
+                    // Math.max(0, ...) ensures they don't go below 0 balls total
+                    data.points = Math.max(0, (data.points || 0) + amount);
+                    
+                    // Only add to 'wins' if it was a positive result
+                    if (amount > 0) {
+                        data.wins = (data.wins || 0) + amount;
+                    }
                     return data;
                 });
+                
                 World.remove(world, ball);
             }
         }
