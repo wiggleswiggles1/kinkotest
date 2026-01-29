@@ -82,6 +82,7 @@ async function processQueue() {
 }
 
 // --- COLLISIONS (STRICT POINT LOGIC) ---
+// --- COLLISIONS (NO MORE JUMPING) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -94,30 +95,21 @@ Events.on(engine, 'collisionStart', (event) => {
             if (ball.label === 'ball' && ball.username) {
                 const amount = parseInt(bucket.label.slice(7));
                 
+                // Show the notification immediately
                 if (amount < 0) {
                     showNoti(`💀 @${ball.username} lost ${Math.abs(amount)} Balls!`, 'noti-admin');
                 } else {
                     showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
-                // --- TRANSACTION FIX ---
+                // Update Firebase: ONLY add the amount from the bucket
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
-                    // If the user somehow isn't in the DB, just record the bucket value
-                    // Do NOT add STARTING_POINTS here; that is the Bot's job.
-                    if (!data) {
-                        return { 
-                            points: Math.max(0, amount), 
-                            wins: (amount > 0 ? amount : 0) 
-                        };
-                    }
-                    
-                    // Add the bucket value to current points
+                    // If user doesn't exist yet, we don't give a bonus here. 
+                    // The bot handles the 250 starting points.
+                    if (!data) return null; 
+
                     data.points = Math.max(0, (data.points || 0) + amount);
-                    
-                    // Add to total wins if positive
-                    if (amount > 0) {
-                        data.wins = (data.wins || 0) + amount;
-                    }
+                    if (amount > 0) data.wins = (data.wins || 0) + amount;
                     return data;
                 });
                 
