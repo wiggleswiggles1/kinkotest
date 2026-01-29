@@ -45,7 +45,7 @@ for (let i = 0; i < rows; i++) {
     }
 }
 
-// --- BUCKET SENSORS ---
+// --- BUCKET SENSORS (Your preferred values) ---
 const bucketValues = [100, 50, 25, 15, 10, 5, 1, -1, -2, -1, 1, 5, 10, 15, 25, 50, 100];
 const totalWidth = 600;
 const bWidth = totalWidth / bucketValues.length;
@@ -58,17 +58,17 @@ bucketValues.forEach((val, i) => {
     World.add(world, sensor);
 });
 
-// --- DROP BALL ---
+// --- DROP BALL (Controlled Physics) ---
 function dropBall(username) {
-    const spawnX = 300 + (Math.random() * 10 - 5); 
+    const spawnX = 300 + (Math.random() * 6 - 3); // Narrower spawn for center favor
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.4, friction: 0.05, frictionAir: 0.05, label: 'ball',
+        restitution: 0.3, friction: 0.05, frictionAir: 0.045, label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
     World.add(world, ball);
 
-    const force = (Math.random() - 0.5) * 0.001;
+    const force = (Math.random() - 0.5) * 0.0005; // Light nudge
     Matter.Body.applyForce(ball, ball.position, { x: force, y: 0 });
 }
 
@@ -81,7 +81,7 @@ async function processQueue() {
     while (dropQueue.length > 0) {
         const username = dropQueue.shift();
         dropBall(username);
-        await new Promise(resolve => setTimeout(resolve, 300)); 
+        await new Promise(resolve => setTimeout(resolve, 400)); 
     }
     isProcessingQueue = false;
 }
@@ -121,7 +121,7 @@ database.ref('drops').on('child_added', (snapshot) => {
     }
 });
 
-// --- LEADERBOARD (FIXED) ---
+// --- LEADERBOARD (Points Based) ---
 database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapshot) => {
     const list = document.getElementById('leaderboard-list');
     if (!list) return;
@@ -142,7 +142,7 @@ database.ref('users').orderByChild('points').limitToLast(10).on('value', (snapsh
             <span style="font-weight: bold; color: white;">${p.pts} Balls</span>`;
         list.appendChild(li);
     });
-}); // This was the missing part!
+});
 
 // --- OUTLINE RENDERING ---
 Events.on(render, 'afterRender', () => {
