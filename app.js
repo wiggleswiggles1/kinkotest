@@ -26,12 +26,11 @@ const wallOptions = { isStatic: true, render: { visible: false } };
 World.add(world, [
     Bodies.rectangle(-5, 400, 10, 800, wallOptions),
     Bodies.rectangle(605, 400, 10, 800, wallOptions),
-    // Funnel guiding balls toward the center mouth
     Bodies.rectangle(160, 40, 220, 10, { isStatic: true, angle: Math.PI / 5, render: { visible: false } }),
     Bodies.rectangle(440, 40, 220, 10, { isStatic: true, angle: -Math.PI / 5, render: { visible: false } })
 ]);
 
-// --- PEGS (Wider to match buckets) ---
+// --- PEGS ---
 for (let i = 1; i < 15; i++) {
     for (let j = 0; j <= i; j++) {
         const x = 300 + (j - i / 2) * 41.5; 
@@ -56,38 +55,33 @@ bucketValues.forEach((val, i) => {
     World.add(world, sensor);
 });
 
-// --- DROP BALL (Heavier center bias) ---
+// --- DROP BALL ---
 function dropBall(username) {
-    const spawnX = 300 + (Math.random() * 4 - 2); // Tight spawn range
+    const spawnX = 300 + (Math.random() * 4 - 2);
     const ball = Bodies.circle(spawnX, 10, 8, {
-        restitution: 0.1,  // Low bounce keeps it in the center
-        friction: 0.2,     // Grips pegs better
-        frictionAir: 0.04, // Falls with more weight
-        label: 'ball',
+        restitution: 0.1, friction: 0.2, frictionAir: 0.04, label: 'ball',
         render: { fillStyle: '#53fc18', strokeStyle: '#fff', lineWidth: 2 }
     });
     ball.username = username;
     World.add(world, ball);
 }
 
-// --- DROP QUEUE SYSTEM (Prevents overlapping/exploding) ---
+// --- DROP QUEUE ---
 let dropQueue = [];
 let isProcessingQueue = false;
 
 async function processQueue() {
     if (isProcessingQueue || dropQueue.length === 0) return;
     isProcessingQueue = true;
-
     while (dropQueue.length > 0) {
         const username = dropQueue.shift();
         dropBall(username);
-        // 300ms delay between balls ensures they don't hit each other
         await new Promise(resolve => setTimeout(resolve, 300)); 
     }
     isProcessingQueue = false;
 }
 
-// --- COLLISIONS ---
+// --- COLLISIONS (FIXED POINT JUMPING) ---
 Events.on(engine, 'collisionStart', (event) => {
     event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -106,8 +100,16 @@ Events.on(engine, 'collisionStart', (event) => {
                     showNoti(`🎉 @${ball.username} landed on ${amount} Balls!`, amount >= 25 ? 'noti-bigwin' : '');
                 }
                 
+                // FIXED TRANSACTION: Removed the +100 starting bonus from here
                 database.ref(`users/${ball.username.toLowerCase()}`).transaction((data) => {
-                    if (!data) return { points: 100 + amount, wins: (amount > 0 ? amount : 0) };
+                    if (!data) {
+                        // Create new user with just the result of this ball
+                        return { 
+                            points: Math.max(0, amount), 
+                            wins: (amount > 0 ? amount : 0) 
+                        };
+                    }
+                    // Apply win/loss to existing balance
                     data.points = Math.max(0, (data.points || 0) + amount);
                     if (amount > 0) data.wins = (data.wins || 0) + amount;
                     return data;
@@ -133,7 +135,6 @@ database.ref('admin_commands').on('child_added', (snapshot) => {
     if (cmd && cmd.username) {
         let message = "";
         let type = "noti-admin";
-
         if (cmd.giftedBy) {
             message = `🎁 GIFT: @${cmd.giftedBy} sent ${cmd.amount} Balls to @${cmd.username}`;
             type = "noti-bigwin";
