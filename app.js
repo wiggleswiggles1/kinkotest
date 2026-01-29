@@ -9,7 +9,7 @@ const render = Render.create({
     engine: engine,
     options: { width: 600, height: 800, wireframes: false, background: 'transparent' }
 });
-
+let notificationsEnabled = true;
 // --- NOTIFICATION SYSTEM ---
 function showNoti(text, type = '') {
     const container = document.getElementById('notification-container');
