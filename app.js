@@ -150,13 +150,14 @@ database.ref('users').orderByChild('points').limitToLast(5).on('value', (snapsho
     players.reverse().forEach((p, i) => {
         const li = document.createElement('li');
         const isFirst = i === 0;
-        li.innerHTML = `
-            <span style="color: #888; width: 22px; display: inline-block;">${i + 1}.</span> 
-            <span class="${isFirst ? 'top-player' : ''}" style="color: ${isFirst ? '#ffd700' : '#53fc18'}; flex: 1;">
-                ${isFirst ? '👑 ' : ''}${p.name}
-            </span> 
-            <span style="font-weight: bold; color: white;">${p.pts} Balls</span>`;
-        list.appendChild(li);
+// Inside your leaderboard list.forEach loop:
+li.innerHTML = `
+    <span style="color: #888; width: 22px; display: inline-block;">${i + 1}.</span> 
+    <span class="${isFirst ? 'top-player' : ''}" style="color: ${isFirst ? '#ffd700' : '#53fc18'}; flex: 1;">
+        ${isFirst ? '👑 ' : ''}${p.name}
+    </span> 
+    <span style="font-weight: bold; color: white; margin-left: 10px;"> - ${p.pts} Balls</span>`;
+    list.appendChild(li);
     });
 });
 
